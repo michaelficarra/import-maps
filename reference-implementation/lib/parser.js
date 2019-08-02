@@ -91,7 +91,7 @@ function sortAndNormalizeSpecifierMap(obj, baseURL) {
         continue;
       }
 
-      validNormalizedAddresses.push(addressURL);
+      validNormalizedAddresses.push(potentialAddress);
     }
     normalized[specifierKey] = validNormalizedAddresses;
   }
