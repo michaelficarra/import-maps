@@ -6,84 +6,71 @@ const supportedBuiltInModules = new Set([`${BUILT_IN_MODULE_SCHEME}:blank`]);
 
 exports.resolve = (specifier, parsedImportMap, scriptURL) => {
   const scriptURLString = scriptURL.href;
-  let appliedMap = false;
 
-  for (const [scopePrefix, scopeImports] of Object.entries(parsedImportMap.scopes)) {
+  for (const [scopePrefix, scopeImports] of Object.entries(parsedImportMap.scopes).concat([[scriptURLString, parsedImportMap.imports]])) {
     if (scopePrefix === scriptURLString ||
         (scopePrefix.endsWith('/') && scriptURLString.startsWith(scopePrefix))) {
-      const scopeImportsMatch = resolveImportsMatch(normalizedSpecifier, scopeImports);
+      const scopeImportsMatch = resolveImportsMatch(specifier, scopeImports, scriptURL);
+      console.log(specifier);
+      console.log(scopeImports);
+      console.log(scriptURL);
+      console.log(scopeImportsMatch);
       if (scopeImportsMatch !== null) {
-        specifier = scopeImportsMatch;
-        appliedMap = true;
+        specifier = scopeImportsMatch.href;
         break;
       }
     }
   }
 
-  const topLevelImportsMatch = resolveImportsMatch(normalizedSpecifier, parsedImportMap.imports);
-  if (!appliedMap && topLevelImportsMatch !== null) {
-    specifier = topLevelImportsMatch;
-    appliedMap = true;
-  }
-
   const asURL = tryURLLikeSpecifierParse(specifier, scriptURL);
-  const normalizedSpecifier = asURL ? asURL.href : specifier;
-  // The specifier was able to be turned into a URL, but wasn't remapped into anything.
-  if (asURL) {
-    if (specifier.endsWith('/') && !asURL.href.endsWith('/')) {
-      throw new TypeError(`Invalid address "${asURL.href}" for package specifier key "${specifier}". ` +
-          `Package addresses must end with "/".`);
-    }
-
-    if (asURL.protocol === BUILT_IN_MODULE_PROTOCOL) {
-      if (addressURL.protocol === BUILT_IN_MODULE_PROTOCOL && addressURL.href.includes('/')) {
-        throw new TypeError(`Invalid address "${specifier}". Built-in module URLs must not contain "/".`);
-      }
-      if (!supportedBuiltInModules.has(asURL.href)) {
-        throw new TypeError(`The "${asURL.href}" built-in module is not implemented.`);
-      }
-    }
-    return asURL;
+  if (asURL === null) {
+    throw new TypeError(`Unmapped bare specifier "${specifier}"`);
   }
 
-  throw new TypeError(`Unmapped bare specifier "${specifier}"`);
+  if (specifier.endsWith('/') && !asURL.href.endsWith('/')) {
+    throw new TypeError(`Invalid address "${asURL.href}" for package specifier key "${specifier}". ` +
+        `Package addresses must end with "/".`);
+  }
+
+  if (asURL.protocol === BUILT_IN_MODULE_PROTOCOL) {
+    if (asURL.href.includes('/')) {
+      throw new TypeError(`Invalid address "${asURL.href}". Built-in module URLs must not contain "/".`);
+    }
+    if (!supportedBuiltInModules.has(asURL.href)) {
+      throw new TypeError(`The "${asURL.href}" built-in module is not implemented.`);
+    }
+  }
+
+  return asURL;
 };
 
-function resolveImportsMatch(normalizedSpecifier, specifierMap) {
+function resolveImportsMatch(normalizedSpecifier, specifierMap, scriptURL) {
   for (const [specifierKey, addresses] of Object.entries(specifierMap)) {
     // Exact-match case
     if (specifierKey === normalizedSpecifier) {
-      if (addresses.length === 0) {
-        throw new TypeError(`Specifier "${normalizedSpecifier}" was mapped to no addresses.`);
-      } else if (addresses.length === 1) {
-        const singleAddress = addresses[0];
-        if (singleAddress.protocol === BUILT_IN_MODULE_PROTOCOL && !supportedBuiltInModules.has(singleAddress.href)) {
-          throw new TypeError(`The "${singleAddress.href}" built-in module is not implemented.`);
+      for (const address of addresses) {
+        const asURL = tryURLLikeSpecifierParse(address, scriptURL);
+        if (asURL === null) {
+          throw new TypeError(`The specifier ${JSON.stringify(normalizedSpecifier)} was resolved to non-URL ${JSON.stringify(address)}.`);
         }
-        return singleAddress;
-      } else if (addresses.length === 2 &&
-                 addresses[0].protocol === BUILT_IN_MODULE_PROTOCOL &&
-                 addresses[1].protocol !== BUILT_IN_MODULE_PROTOCOL) {
-        return supportedBuiltInModules.has(addresses[0].href) ? addresses[0] : addresses[1];
-      } else {
-        throw new Error('The reference implementation for multi-address fallbacks that are not ' +
-                        '[built-in module, fetch-scheme URL] is not yet implemented.');
+        if (asURL.protocol !== BUILT_IN_MODULE_PROTOCOL || supportedBuiltInModules.has(asURL.href)) {
+          return asURL;
+        }
       }
     }
 
     // Package prefix-match case
     if (specifierKey.endsWith('/') && normalizedSpecifier.startsWith(specifierKey)) {
-      if (addresses.length === 0) {
-        throw new TypeError(`Specifier "${normalizedSpecifier}" was mapped to no addresses ` +
-                            `(via prefix specifier key "${specifierKey}").`);
-      } else if (addresses.length === 1) {
-        const afterPrefix = normalizedSpecifier.substring(specifierKey.length);
-        return new URL(afterPrefix, addresses[0]);
-      } else {
-        throw new Error('The reference implementation for multi-address fallbacks that are not ' +
-                        '[built-in module, fetch-scheme URL] is not yet implemented.');
+      const afterPrefix = normalizedSpecifier.substring(specifierKey.length);
+      for (const address of addresses) {
+        try {
+          return new URL(afterPrefix, address);
+        } catch {
+          throw new TypeError(`The specifier ${JSON.stringify(normalizedSpecifier)} was resolved to non-URL ${JSON.stringify(address)}.`);
+        }
       }
     }
   }
+
   return null;
 }

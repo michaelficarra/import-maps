@@ -74,24 +74,7 @@ function sortAndNormalizeSpecifierMap(obj, baseURL) {
         continue;
       }
 
-      const addressURL = tryURLLikeSpecifierParse(potentialAddress, baseURL);
-      if (addressURL === null) {
-        console.warn(`Invalid address "${potentialAddress}" for the specifier key "${specifierKey}".`);
-        continue;
-      }
-
-      if (specifierKey.endsWith('/') && !addressURL.href.endsWith('/')) {
-        console.warn(`Invalid address "${addressURL.href}" for package specifier key "${specifierKey}". ` +
-            `Package addresses must end with "/".`);
-        continue;
-      }
-
-      if (addressURL.protocol === BUILT_IN_MODULE_PROTOCOL && addressURL.href.includes('/')) {
-        console.warn(`Invalid address "${potentialAddress}". Built-in module URLs must not contain "/".`);
-        continue;
-      }
-
-      validNormalizedAddresses.push(potentialAddress);
+      validNormalizedAddresses.push(normalizeSpecifierKey(potentialAddress, baseURL));
     }
     normalized[specifierKey] = validNormalizedAddresses;
   }
