@@ -67,7 +67,7 @@ function sortAndNormalizeSpecifierMap(obj, baseURL) {
   for (const [specifierKey, potentialAddresses] of Object.entries(normalized)) {
     assert(Array.isArray(potentialAddresses));
 
-    const validtaggedSpecifieres = [];
+    const validNormalizedAddresses = [];
     for (const potentialAddress of potentialAddresses) {
       if (typeof potentialAddress !== 'string') {
         console.warn(`Invalid address ${JSON.stringify(potentialAddress)} inside the address array for the ` +
@@ -86,9 +86,9 @@ function sortAndNormalizeSpecifierMap(obj, baseURL) {
         continue;
       }
 
-      validtaggedSpecifieres.push(taggedSpecifier.specifier);
+      validNormalizedAddresses.push(taggedSpecifier.specifier);
     }
-    normalized[specifierKey] = validtaggedSpecifieres;
+    normalized[specifierKey] = validNormalizedAddresses;
   }
 
   const sortedAndNormalized = {};
