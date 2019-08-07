@@ -29,7 +29,7 @@ exports.tryURLLikeSpecifierParse = (specifier, baseURL) => {
       console.warn(`Path-based module specifier ${JSON.stringify(specifier)} cannot be used with a base URL that uses the "data:" scheme.`);
       return { type: 'invalid' };
     }
-    return exports.tryURLParse(specifier, baseURL);
+    return { type: 'url', specifier: new URL(specifier, baseURL).href, isBuiltin: false };
   }
 
   const url = exports.tryURLParse(specifier);
@@ -39,7 +39,7 @@ exports.tryURLLikeSpecifierParse = (specifier, baseURL) => {
   }
 
   if (exports.hasFetchScheme(url)) {
-    return { type: 'url', url: url.href, isBuiltin: false };
+    return { type: 'url', specifier: url.href, isBuiltin: false };
   }
 
   if (url.protocol === exports.BUILT_IN_MODULE_PROTOCOL) {
@@ -47,7 +47,7 @@ exports.tryURLLikeSpecifierParse = (specifier, baseURL) => {
       console.warn(`Invalid address "${url.href}". Built-in module URLs must not contain "/".`);
       return { type: 'invalid' };
     }
-    return { type: 'url', url: url.href, isBuiltin: true };
+    return { type: 'url', specifier: url.href, isBuiltin: true };
   }
 
   return { type: 'nonURL', specifier };
