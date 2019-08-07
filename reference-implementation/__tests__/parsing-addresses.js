@@ -56,7 +56,7 @@ describe('Relative URL-like addresses', () => {
     );
   });
 
-  it('should ignore percent-encoded variants of ./, ../, or /', () => {
+  it('should treat percent-encoded variants of ./, ../, or / as non-URLs', () => {
     expectSpecifierMap(
       `{
         "dotSlash1": "%2E/",
@@ -95,7 +95,7 @@ describe('Built-in module addresses', () => {
     );
   });
 
-  it('should ignore percent-encoded variants of the built-in module scheme', () => {
+  it('should treat percent-encoded variants of the built-in module scheme as non-URLs', () => {
     expectSpecifierMap(
       `{
         "foo": "${encodeURIComponent(BUILT_IN_MODULE_SCHEME + ':')}foo"
@@ -200,7 +200,7 @@ describe('Absolute URL addresses', () => {
     );
   });
 
-  it('should parse absolute URLs, ignoring unparseable ones', () => {
+  it('should parse/normalize absolute URLs, and treat unparseable ones as non-URLs', () => {
     expectSpecifierMap(
       `{
         "unparseable1": "https://ex ample.org/",
@@ -297,7 +297,7 @@ describe('Failing addresses: mismatched trailing slashes', () => {
 });
 
 describe('Other invalid addresses', () => {
-  it('should ignore unprefixed strings that are not absolute URLs', () => {
+  it('should treat unprefixed strings that are not absolute URLs as non-URLs', () => {
     for (const bad of ['bar', '\\bar', '~bar', '#bar', '?bar']) {
       expectSpecifierMap(
         `{
