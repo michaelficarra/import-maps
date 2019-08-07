@@ -28,13 +28,8 @@ exports.resolve = (specifier, parsedImportMap, scriptURLparameter) => {
     throw new TypeError(`Unmapped bare specifier "${specifier}"`);
   }
 
-  if (asURL.protocol === BUILT_IN_MODULE_PROTOCOL) {
-    if (asURL.href.includes('/')) {
-      throw new TypeError(`Invalid address "${asURL.href}". Built-in module URLs must not contain "/".`);
-    }
-    if (!supportedBuiltInModules.has(asURL.href)) {
-      throw new TypeError(`The "${asURL.href}" built-in module is not implemented.`);
-    }
+  if (asURL.protocol === BUILT_IN_MODULE_PROTOCOL && !supportedBuiltInModules.has(asURL.href)) {
+    throw new TypeError(`The "${asURL.href}" built-in module is not implemented.`);
   }
 
   return asURL;
