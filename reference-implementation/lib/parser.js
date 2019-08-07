@@ -47,16 +47,16 @@ function sortAndNormalizeSpecifierMap(obj, baseURL) {
   const normalized = {};
   for (const [specifierKey, value] of Object.entries(obj)) {
     const normalizedSpecifierKey = tryURLLikeSpecifierParse(specifierKey, baseURL);
-    if (normalizedSpecifierKey === null) {
+    if (normalizedSpecifierKey.type === 'invalid') {
       continue;
     }
 
     if (typeof value === 'string') {
-      normalized[normalizedSpecifierKey] = [value];
+      normalized[normalizedSpecifierKey.specifier] = [value];
     } else if (value === null) {
-      normalized[normalizedSpecifierKey] = [];
+      normalized[normalizedSpecifierKey.specifier] = [];
     } else if (Array.isArray(value)) {
-      normalized[normalizedSpecifierKey] = obj[specifierKey];
+      normalized[normalizedSpecifierKey.specifier] = obj[specifierKey];
     } else {
       console.warn(`Invalid address ${JSON.stringify(value)} for the specifier key "${specifierKey}". ` +
           `Addresses must be strings, arrays, or null.`);
@@ -75,21 +75,18 @@ function sortAndNormalizeSpecifierMap(obj, baseURL) {
         continue;
       }
 
-      let normalizedAddress = tryURLLikeSpecifierParse(potentialAddress, baseURL);
-      if (normalizedAddress === null) {
+      const normalizedAddress = tryURLLikeSpecifierParse(potentialAddress, baseURL);
+      if (normalizedAddress.type === 'invalid') {
         continue;
       }
-      if (typeof normalizedAddress !== 'string') {
-        normalizedAddress = normalizedAddress.href;
-      }
 
-      if (specifierKey.endsWith('/') && !normalizedAddress.endsWith('/')) {
-        console.warn(`Invalid address "${normalizedAddress}" for package specifier key "${specifierKey}". ` +
+      if (specifierKey.endsWith('/') && !normalizedAddress.specifier.endsWith('/')) {
+        console.warn(`Invalid address "${normalizedAddress.specifier}" for package specifier key "${specifierKey}". ` +
             `Package addresses must end with "/".`);
         continue;
       }
 
-      validNormalizedAddresses.push(normalizedAddress);
+      validNormalizedAddresses.push(normalizedAddress.specifier);
     }
     normalized[specifierKey] = validNormalizedAddresses;
   }

@@ -8,31 +8,29 @@ exports.resolve = (specifier, parsedImportMap, scriptURLparameter) => {
   const scriptURL = new URL(scriptURLparameter);
 
   let asURL = tryURLLikeSpecifierParse(specifier, scriptURL);
-  if (asURL === null) {
+  if (asURL.type === 'invalid') {
     throw new TypeError('Attempting to resolve invalid specifier.');
   }
-  let normalizedSpecifier = typeof asURL === 'string' ? asURL : asURL.href;
 
   for (const [scopePrefix, scopeImports] of Object.entries(parsedImportMap.scopes).concat([[scriptURL.href, parsedImportMap.imports]])) {
     if (scopePrefix === scriptURL.href ||
         (scopePrefix.endsWith('/') && scriptURL.href.startsWith(scopePrefix))) {
-      const scopeImportsMatch = resolveImportsMatch(normalizedSpecifier, scopeImports, scriptURL);
+      const scopeImportsMatch = resolveImportsMatch(asURL.specifier, scopeImports, scriptURL);
       if (scopeImportsMatch !== null) {
-        asURL = scopeImportsMatch;
-        break;
+        return scopeImportsMatch;
       }
     }
   }
 
-  if (asURL === null || typeof asURL === 'string') {
+  if (asURL.type !== 'url') {
     throw new TypeError(`Unmapped bare specifier "${specifier}"`);
   }
 
-  if (asURL.protocol === BUILT_IN_MODULE_PROTOCOL && !supportedBuiltInModules.has(asURL.href)) {
-    throw new TypeError(`The "${asURL.href}" built-in module is not implemented.`);
+  if (asURL.isBuiltin && !supportedBuiltInModules.has(asURL.specifier)) {
+    throw new TypeError(`The "${asURL.specifier}" built-in module is not implemented.`);
   }
 
-  return asURL;
+  return new URL(asURL.specifier);
 };
 
 function resolveImportsMatch(normalizedSpecifier, specifierMap, scriptURL) {
@@ -41,11 +39,11 @@ function resolveImportsMatch(normalizedSpecifier, specifierMap, scriptURL) {
       // Exact-match case
       for (const address of addresses) {
         const asURL = tryURLLikeSpecifierParse(address, scriptURL);
-        if (asURL === null || typeof asURL === 'string') {
+        if (asURL.type !== 'url') {
           throw new TypeError(`The specifier ${JSON.stringify(normalizedSpecifier)} was resolved to non-URL ${JSON.stringify(address)}.`);
         }
-        if (asURL.protocol !== BUILT_IN_MODULE_PROTOCOL || supportedBuiltInModules.has(asURL.href)) {
-          return asURL;
+        if (!asURL.isBuiltin || supportedBuiltInModules.has(asURL.specifier)) {
+          return new URL(asURL.specifier);
         }
       }
       throw new TypeError(`The specifier ${JSON.stringify(normalizedSpecifier)} could not be resolved.`);
@@ -54,7 +52,10 @@ function resolveImportsMatch(normalizedSpecifier, specifierMap, scriptURL) {
       const afterPrefix = normalizedSpecifier.substring(specifierKey.length);
       for (const address of addresses) {
         try {
-          return new URL(afterPrefix, address);
+          const resolved = new URL(afterPrefix, address);
+          if (resolved.protocol !== BUILT_IN_MODULE_PROTOCOL || supportedBuiltInModules.has(resolved.href)) {
+            return resolved;
+          }
         } catch {
           throw new TypeError(`The specifier ${JSON.stringify(normalizedSpecifier)} was resolved to non-URL ${JSON.stringify(address)}.`);
         }

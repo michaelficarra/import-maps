@@ -21,13 +21,13 @@ exports.tryURLParse = (string, baseURL) => {
 exports.tryURLLikeSpecifierParse = (specifier, baseURL) => {
   if (specifier === '') {
     console.warn(`Invalid empty string specifier.`);
-    return null;
+    return { type: 'invalid' };
   }
 
   if (specifier.startsWith('/') || specifier.startsWith('./') || specifier.startsWith('../')) {
     if ('data:' === baseURL.protocol) {
       console.warn(`Path-based module specifier ${JSON.stringify(specifier)} cannot be used with a base URL that uses the "data:" scheme.`);
-      return null;
+      return { type: 'invalid' };
     }
     return exports.tryURLParse(specifier, baseURL);
   }
@@ -35,22 +35,22 @@ exports.tryURLLikeSpecifierParse = (specifier, baseURL) => {
   const url = exports.tryURLParse(specifier);
 
   if (url === null) {
-    return specifier;
+    return { type: 'nonURL', specifier };
   }
 
   if (exports.hasFetchScheme(url)) {
-    return url;
+    return { type: 'url', url: url.href, isBuiltin: false };
   }
 
   if (url.protocol === exports.BUILT_IN_MODULE_PROTOCOL) {
     if (url.href.includes('/')) {
       console.warn(`Invalid address "${url.href}". Built-in module URLs must not contain "/".`);
-      return null;
+      return { type: 'invalid' };
     }
-    return url;
+    return { type: 'url', url: url.href, isBuiltin: true };
   }
 
-  return specifier;
+  return { type: 'nonURL', specifier };
 };
 
 exports.hasFetchScheme = url => {
