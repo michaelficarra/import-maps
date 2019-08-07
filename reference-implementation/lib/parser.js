@@ -2,7 +2,8 @@
 const assert = require('assert');
 const { tryURLParse, hasFetchScheme, tryURLLikeSpecifierParse, BUILT_IN_MODULE_PROTOCOL } = require('./utils.js');
 
-exports.parseFromString = (input, baseURL) => {
+exports.parseFromString = (input, baseURLparameter) => {
+  const baseURL = new URL(baseURLparameter);
   const parsed = JSON.parse(input);
 
   if (!isJSONObject(parsed)) {
@@ -45,7 +46,7 @@ function sortAndNormalizeSpecifierMap(obj, baseURL) {
   // Normalize all entries into arrays
   const normalized = {};
   for (const [specifierKey, value] of Object.entries(obj)) {
-    const normalizedSpecifierKey = normalizeSpecifierKey(specifierKey, baseURL);
+    const normalizedSpecifierKey = tryURLLikeSpecifierParse(specifierKey, baseURL);
     if (normalizedSpecifierKey === null) {
       continue;
     }
@@ -74,7 +75,21 @@ function sortAndNormalizeSpecifierMap(obj, baseURL) {
         continue;
       }
 
-      validNormalizedAddresses.push(normalizeSpecifierKey(potentialAddress, baseURL));
+      let normalizedAddress = tryURLLikeSpecifierParse(potentialAddress, baseURL);
+      if (normalizedAddress === null) {
+        continue;
+      }
+      if (typeof normalizedAddress !== 'string') {
+        normalizedAddress = normalizedAddress.href;
+      }
+
+      if (specifierKey.endsWith('/') && !normalizedAddress.endsWith('/')) {
+        console.warn(`Invalid address "${normalizedAddress}" for package specifier key "${specifierKey}". ` +
+            `Package addresses must end with "/".`);
+        continue;
+      }
+
+      validNormalizedAddresses.push(normalizedAddress);
     }
     normalized[specifierKey] = validNormalizedAddresses;
   }
@@ -117,26 +132,6 @@ function sortAndNormalizeScopes(obj, baseURL) {
   }
 
   return sortedAndNormalized;
-}
-
-function normalizeSpecifierKey(specifierKey, baseURL) {
-  // Ignore attempts to use the empty string as a specifier key
-  if (specifierKey === '') {
-    console.warn(`Invalid empty string specifier key.`);
-    return null;
-  }
-
-  const url = tryURLLikeSpecifierParse(specifierKey, baseURL);
-  if (url !== null) {
-    const urlString = url.href;
-    if (url.protocol === BUILT_IN_MODULE_PROTOCOL && urlString.includes('/')) {
-      console.warn(`Invalid specifier key "${urlString}". Built-in module specifiers must not contain "/".`);
-      return null;
-    }
-    return urlString;
-  }
-
-  return specifierKey;
 }
 
 function isJSONObject(value) {

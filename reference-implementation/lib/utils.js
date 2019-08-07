@@ -19,21 +19,38 @@ exports.tryURLParse = (string, baseURL) => {
 };
 
 exports.tryURLLikeSpecifierParse = (specifier, baseURL) => {
+  if (specifier === '') {
+    console.warn(`Invalid empty string specifier.`);
+    return null;
+  }
+
   if (specifier.startsWith('/') || specifier.startsWith('./') || specifier.startsWith('../')) {
+    if ('data:' === baseURL.protocol) {
+      console.warn(`Path-based module specifier ${JSON.stringify(specifier)} cannot be used with a base URL that uses the "data:" scheme.`);
+      return null;
+    }
     return exports.tryURLParse(specifier, baseURL);
   }
 
   const url = exports.tryURLParse(specifier);
 
   if (url === null) {
-    return null;
+    return specifier;
   }
 
-  if (exports.hasFetchScheme(url) || url.protocol === exports.BUILT_IN_MODULE_PROTOCOL) {
+  if (exports.hasFetchScheme(url)) {
     return url;
   }
 
-  return null;
+  if (url.protocol === exports.BUILT_IN_MODULE_PROTOCOL) {
+    if (url.href.includes('/')) {
+      console.warn(`Invalid address "${url.href}". Built-in module URLs must not contain "/".`);
+      return null;
+    }
+    return url;
+  }
+
+  return specifier;
 };
 
 exports.hasFetchScheme = url => {

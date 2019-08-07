@@ -29,11 +29,12 @@ describe('Relative URL-like specifier keys', () => {
         "/foo": "https://example.com/slash"
       }`,
       'data:text/html,test',
-      {
-        './foo': ['https://example.com/dotslash'],
-        '../foo': ['https://example.com/dotdotslash'],
-        '/foo': ['https://example.com/slash']
-      }
+      {},
+      [
+        "Path-based module specifier \"./foo\" cannot be used with a base URL that uses the \"data:\" scheme.",
+        "Path-based module specifier \"../foo\" cannot be used with a base URL that uses the \"data:\" scheme.",
+        "Path-based module specifier \"/foo\" cannot be used with a base URL that uses the \"data:\" scheme."
+      ]
     );
   });
 
@@ -153,8 +154,8 @@ describe('Absolute URL specifier keys', () => {
         [`${BLANK}\\foo`]: ['https://base.example/blank/backslashfoo']
       },
       [
-        `Invalid specifier key "${BLANK}/". Built-in module specifiers must not contain "/".`,
-        `Invalid specifier key "${BLANK}/foo". Built-in module specifiers must not contain "/".`
+        `Invalid address "${BLANK}/". Built-in module URLs must not contain "/".`,
+        `Invalid address "${BLANK}/foo". Built-in module URLs must not contain "/".`
       ]
     );
   });
