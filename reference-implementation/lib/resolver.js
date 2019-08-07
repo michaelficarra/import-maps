@@ -1,6 +1,11 @@
 'use strict';
 const { URL } = require('url');
-const { tryURLParse, tryURLLikeSpecifierParse, BUILT_IN_MODULE_SCHEME, BUILT_IN_MODULE_PROTOCOL } = require('./utils.js');
+const {
+  tryURLParse,
+  tryURLLikeSpecifierParse,
+  BUILT_IN_MODULE_SCHEME,
+  BUILT_IN_MODULE_PROTOCOL
+} = require('./utils.js');
 
 const supportedBuiltInModules = new Set([`${BUILT_IN_MODULE_SCHEME}:blank`]);
 
@@ -12,7 +17,9 @@ exports.resolve = (specifier, parsedImportMap, scriptURLparameter) => {
     throw new TypeError('Attempting to resolve invalid specifier.');
   }
 
-  for (const [scopePrefix, scopeImports] of Object.entries(parsedImportMap.scopes).concat([[scriptURL.href, parsedImportMap.imports]])) {
+  const scopeEntries = Object.entries(parsedImportMap.scopes)
+    .concat([[scriptURL.href, parsedImportMap.imports]]);
+  for (const [scopePrefix, scopeImports] of scopeEntries) {
     if (scopePrefix === scriptURL.href ||
         (scopePrefix.endsWith('/') && scriptURL.href.startsWith(scopePrefix))) {
       const scopeImportsMatch = resolveImportsMatch(taggedSpecifier.specifier, scopeImports, scriptURL);
@@ -40,7 +47,8 @@ function resolveImportsMatch(normalizedSpecifier, specifierMap, scriptURL) {
       for (const address of addresses) {
         const taggedSpecifierValue = tryURLLikeSpecifierParse(address, scriptURL);
         if (taggedSpecifierValue.type !== 'url') {
-          throw new TypeError(`The specifier ${JSON.stringify(normalizedSpecifier)} was resolved to non-URL ${JSON.stringify(address)}.`);
+          throw new TypeError(`The specifier ${JSON.stringify(normalizedSpecifier)} was resolved to ` +
+            `non-URL ${JSON.stringify(address)}.`);
         }
         if (!taggedSpecifierValue.isBuiltin || supportedBuiltInModules.has(taggedSpecifierValue.specifier)) {
           return new URL(taggedSpecifierValue.specifier);
@@ -53,7 +61,8 @@ function resolveImportsMatch(normalizedSpecifier, specifierMap, scriptURL) {
       for (const address of addresses) {
         const resolved = tryURLParse(afterPrefix, address);
         if (resolved === null) {
-          throw new TypeError(`The specifier ${JSON.stringify(normalizedSpecifier)} was resolved to non-URL ${JSON.stringify(address)}.`);
+          throw new TypeError(`The specifier ${JSON.stringify(normalizedSpecifier)} was resolved to ` +
+            `non-URL ${JSON.stringify(address)}.`);
         }
         if (resolved.protocol !== BUILT_IN_MODULE_PROTOCOL || supportedBuiltInModules.has(resolved.href)) {
           return resolved;

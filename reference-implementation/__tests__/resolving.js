@@ -5,6 +5,7 @@ const { resolve } = require('../lib/resolver.js');
 const { BUILT_IN_MODULE_SCHEME } = require('../lib/utils.js');
 
 const BLANK = `${BUILT_IN_MODULE_SCHEME}:blank`;
+const NONE = `${BUILT_IN_MODULE_SCHEME}:none`;
 
 const mapBaseURL = new URL('https://example.com/app/index.html');
 const scriptURL = new URL('https://example.com/js/app.mjs');
@@ -56,6 +57,28 @@ describe('Unmapped', () => {
     expect(() => resolveUnderTest('https://ex ample.org/')).toThrow(TypeError);
     expect(() => resolveUnderTest('https://example.com:demo')).toThrow(TypeError);
     expect(() => resolveUnderTest('http://[www.example.com]/')).toThrow(TypeError);
+  });
+});
+
+describe('the empty string', () => {
+  it('should fail for an unmapped empty string', () => {
+    const resolveUnderTest = makeResolveUnderTest(`{}`);
+    console.warn = () => {};
+    expect(() => resolveUnderTest('')).toThrow(TypeError);
+  });
+
+  it('should fail for a mapped empty string', () => {
+    console.warn = () => {};
+    const resolveUnderTest = makeResolveUnderTest(`{
+      "imports": {
+        "": "/",
+        "emptyString": "",
+        "emptyString/": ""
+      }
+    }`);
+    expect(() => resolveUnderTest('')).toThrow(TypeError);
+    expect(() => resolveUnderTest('emptyString')).toThrow(TypeError);
+    expect(() => resolveUnderTest('emptyString/a')).toThrow(TypeError);
   });
 });
 
@@ -134,6 +157,14 @@ describe('Mapped using the "imports" key only (no scopes)', () => {
 
     it('should fail for package submodules that map to nowhere', () => {
       expect(() => resolveUnderTest('nowhere/foo')).toThrow(TypeError);
+    });
+
+    it('should allow breaking out of a package', () => {
+      expect(resolveUnderTest(`moment/${BLANK}`)).toMatchURL(BLANK);
+      expect(() => resolveUnderTest(`moment/${NONE}`)).toThrow(TypeError);
+      expect(resolveUnderTest('moment/https://example.org/')).toMatchURL('https://example.org/');
+      expect(() => resolveUnderTest('nowhere/https://example.org/')).toThrow(TypeError);
+      expect(() => resolveUnderTest('moment/http://[www.example.com]/')).toThrow(TypeError);
     });
   });
 

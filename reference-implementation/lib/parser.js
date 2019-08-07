@@ -1,6 +1,6 @@
 'use strict';
 const assert = require('assert');
-const { tryURLParse, hasFetchScheme, tryURLLikeSpecifierParse, BUILT_IN_MODULE_PROTOCOL } = require('./utils.js');
+const { tryURLParse, hasFetchScheme, tryURLLikeSpecifierParse } = require('./utils.js');
 
 exports.parseFromString = (input, baseURLparameter) => {
   const baseURL = new URL(baseURLparameter);

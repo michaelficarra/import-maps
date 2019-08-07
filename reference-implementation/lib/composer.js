@@ -38,20 +38,5 @@ function applyCascadeWithContexts(moduleSpecifier, applicableMapContexts) {
 function scopesMatchingPrefix(prefix, scopesObject) {
   return Object.keys(scopesObject)
     .filter(scopePrefix => scopePrefix === prefix || (scopePrefix.endsWith('/') && prefix.startsWith(scopePrefix)))
-    .sort(shorterLengthThenCodeUnitOrder)
     .map(s => scopesObject[s]);
-}
-
-function shorterLengthThenCodeUnitOrder(a, b) {
-  return compare(a.length, b.length) || compare(a, b);
-}
-
-function compare(a, b) {
-  if (a > b) {
-    return 1;
-  }
-  if (b > a) {
-    return -1;
-  }
-  return 0;
 }
