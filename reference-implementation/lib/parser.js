@@ -1,6 +1,6 @@
 'use strict';
 const assert = require('assert');
-const { tryURLParse, hasFetchScheme, tryURLLikeSpecifierParse } = require('./utils.js');
+const { tryURLParse, hasFetchScheme, tryURLLikeSpecifierParse, sortObjectKeysByLongestFirst } = require('./utils.js');
 
 exports.parseFromString = (input, baseURLparameter) => {
   const baseURL = new URL(baseURLparameter);
@@ -91,13 +91,7 @@ function sortAndNormalizeSpecifierMap(obj, baseURL) {
     normalized[specifierKey] = validNormalizedAddresses;
   }
 
-  const sortedAndNormalized = {};
-  const sortedKeys = Object.keys(normalized).sort(longerLengthThenCodeUnitOrder);
-  for (const key of sortedKeys) {
-    sortedAndNormalized[key] = normalized[key];
-  }
-
-  return sortedAndNormalized;
+  return sortObjectKeysByLongestFirst(normalized);
 }
 
 function sortAndNormalizeScopes(obj, baseURL) {
@@ -122,29 +116,9 @@ function sortAndNormalizeScopes(obj, baseURL) {
     normalized[normalizedScopePrefix] = sortAndNormalizeSpecifierMap(potentialSpecifierMap, baseURL);
   }
 
-  const sortedAndNormalized = {};
-  const sortedKeys = Object.keys(normalized).sort(longerLengthThenCodeUnitOrder);
-  for (const key of sortedKeys) {
-    sortedAndNormalized[key] = normalized[key];
-  }
-
-  return sortedAndNormalized;
+  return sortObjectKeysByLongestFirst(normalized);
 }
 
 function isJSONObject(value) {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
-
-function longerLengthThenCodeUnitOrder(a, b) {
-  return compare(b.length, a.length) || compare(a, b);
-}
-
-function compare(a, b) {
-  if (a > b) {
-    return 1;
-  }
-  if (b > a) {
-    return -1;
-  }
-  return 0;
 }

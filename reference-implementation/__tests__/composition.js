@@ -256,10 +256,9 @@ describe('Composition', () => {
       scopes: {
         'https://example.com/x/y/z': { 'https://c/': ['https://d/'] },
         'https://example.com/x/y/': { 'https://a/': ['https://b/'] },
-        'https://example.com/x/': { 'https://c/': ['https://f/'] },
+        'https://example.com/x/': { 'https://c/': ['https://f/'] }
       }
     }, null, 2));
   });
-
 });
 

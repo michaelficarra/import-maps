@@ -57,3 +57,22 @@ exports.tryURLLikeSpecifierParse = (specifier, baseURL) => {
 exports.hasFetchScheme = url => {
   return FETCH_SCHEMES.has(url.protocol.slice(0, -1));
 };
+
+exports.sortObjectKeysByLongestFirst = obj => {
+  const sortedEntries = Object.entries(obj).sort((a, b) => longerLengthThenCodeUnitOrder(a[0], b[0]));
+  return Object.fromEntries(sortedEntries);
+};
+
+function longerLengthThenCodeUnitOrder(a, b) {
+  return compare(b.length, a.length) || compare(a, b);
+}
+
+function compare(a, b) {
+  if (a > b) {
+    return 1;
+  }
+  if (b > a) {
+    return -1;
+  }
+  return 0;
+}

@@ -1,9 +1,10 @@
 'use strict';
+const { sortObjectKeysByLongestFirst } = require('./utils.js');
 
 exports.appendMap = (baseMap, newMap) => {
   return {
     imports: joinHelper(baseMap.imports, [baseMap.imports], newMap.imports),
-    scopes: Object.fromEntries([
+    scopes: sortObjectKeysByLongestFirst(Object.fromEntries([
       ...Object.entries(baseMap.scopes)
         .map(([scopePrefix, scopeMapping]) => [scopePrefix, joinHelper(scopeMapping, [], {})]),
       ...Object.entries(newMap.scopes).map(([scopePrefix, scopeMapping]) => [
@@ -14,7 +15,7 @@ exports.appendMap = (baseMap, newMap) => {
           scopeMapping
         )
       ])
-    ])
+    ]))
   };
 };
 
